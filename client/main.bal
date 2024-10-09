@@ -16,10 +16,11 @@ type Delivery readonly & record {
 };
 
 configurable string groupId = "customers";
-configurable string new_delivery_request = "new-delivery_request";
+configurable string new_delivery_request = "new-delivery_requests";
 configurable string delivery_schedule_response = "delivery_schedule_response";
 configurable decimal pollingInterval = 2;
-configurable string kafkaEndpoint = kafka:DEFAULT_URL;
+//configurable string kafkaEndpoint = kafka:DEFAULT_URL;
+configurable string kafkaEndpoint = "172.20.0.11:9092";
 
 final kafka:ConsumerConfiguration consumerConfigs = {
     groupId: groupId,
@@ -32,12 +33,14 @@ service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
     private final kafka:Producer packageProducer;
 
     function init() returns error? {
+        io:println("Welcome to the Kafka tutorial...");
         self.packageProducer = check new (kafkaEndpoint);
         Package new_package = {customer_name: "Showen Otto", contact_number: "0814503163", pickup_location: "Soweto Market", delivery_type: "standard", preferred_times: "Morning"};
         check self.packageProducer->send({
             topic: new_delivery_request,
             value: new_package.toJsonString()
         });
+        io:println("Welcome to the Kafka tutorial...");
     }
 
     remote function onConsumerRecord(Delivery[] deliveries) returns error? {
