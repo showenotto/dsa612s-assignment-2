@@ -1,0 +1,89 @@
+import ballerinax/kafka;
+import ballerina/io;
+
+type Package readonly & record {
+    string customer_name;
+    string contact_number;
+    string pickup_location;
+    string delivery_type;
+    string preferred_times;
+};
+
+configurable string groupId = "customers";
+configurable string new_delivery_requests = "new_delivery-requests";
+configurable string paymentSuccessOrders = "payment-success-orders";
+configurable decimal pollingInterval = 1;
+configurable string kafkaEndpoint = kafka:DEFAULT_URL;
+
+final kafka:ConsumerConfiguration consumerConfigs = {
+    groupId: groupId,
+    topics: [new_delivery_requests],
+    offsetReset: kafka:OFFSET_RESET_EARLIEST,
+    pollingInterval
+};
+
+listener kafka:Listener cons = new (kafka:DEFAULT_URL, {
+    groupId: "customers",
+    topics: "new-delivery-requests"
+});
+
+service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
+    private final kafka:Producer orderProducer;
+
+    function init() returns error? {
+        self.orderProducer = check new (kafkaEndpoint);
+    }
+
+    remote function onConsumerRecord(Order[] orders) returns error? {
+        from Order 'order in orders
+            where 'order.paymentStatus == SUCCESS
+            do {
+                check self.orderProducer->send({
+                    topic: paymentSuccessOrders,
+                    value: 'order
+                });
+            };
+    }
+} 
+
+public function main() returns error? {
+    io:println("Welcome to the 'Package Delivery System'!");
+    io:println("-----------------------------------------\n");
+    while true {
+        string cmd = io:readln("pds> ");
+        if cmd == "exit" {
+            io:println("Goodbye!");
+            break;
+        }
+        _ = check Cmd(cmd);
+    }   
+}
+
+
+
+function Cmd(string cmd) returns error?{
+    match cmd{
+        "help" => {
+            help();
+        }
+        "?" => {
+            help();
+        }
+        "send_new_package" => {
+            io:println("Enter Package Information!");
+            string customer_name = io:readln("Name: ");
+            string contact_number = io:readln("Contact Number: ");
+            string pickup_location = io:readln("Pickup Location: ");
+            string delivery_type = io:readln("Delivery Type: ");
+            string preferred_times = io:readln("Preferred Times: ");
+            Package new_package = {customer_name: customer_name, contact_number: contact_number, pickup_location: pickup_location, delivery_type:delivery_type, preferred_times:preferred_times};
+
+        }
+
+    }
+}
+
+function help(){
+    io:println("List of available commands:");
+    io:println("send_new_package - The customers sends a package.\n");
+}
