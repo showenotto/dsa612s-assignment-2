@@ -7,7 +7,7 @@ import ballerina/sql;
 
 
 final mysql:Client dbClient = check new(
-    host="172.25.0.8", user="root", password="root", port=3306, database="package_delivery_system"
+    host="172.25.0.6", user="root", password="root", port=3306, database="package_delivery_system"
 );
 
 type Package readonly & record {
@@ -77,12 +77,11 @@ service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
 }
 
 isolated function addPackage(Package pkg) returns int|error {
-    string tracking_id = "8";
     sql:ExecutionResult result = check dbClient->execute(`
         INSERT INTO deliveries (customer_name, contact_number, pickup_location, delivery_location,
-                               delivery_type, preferred_times, status, tracking_id)
+                               delivery_type, preferred_times, status)
         VALUES (${pkg.customer_name}, ${pkg.contact_number}, ${pkg.pickup_location},  
-                ${pkg.delivery_location}, ${pkg.delivery_type}, ${pkg.preferred_times}, "Pending", ${tracking_id})
+                ${pkg.delivery_location}, ${pkg.delivery_type}, ${pkg.preferred_times}, "Pending")
     `);
     int|string? lastInsertId = result.lastInsertId;
     if lastInsertId is int {

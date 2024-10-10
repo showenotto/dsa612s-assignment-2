@@ -35,7 +35,7 @@ service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
 
     function init() returns error? {
         self.packageProducer = check new (kafkaEndpoint);
-        Package new_package = {customer_name: "Showen Otto", contact_number: "0814503163", pickup_location: "Soweto Market", delivery_location: "Windhoek West", delivery_type: "international", preferred_times: "Morning"};
+        Package new_package = {customer_name: "Showen Otto", contact_number: "0814503163", pickup_location: "Soweto Market", delivery_location: "Windhoek West", delivery_type: "standard", preferred_times: "Morning"};
         check self.packageProducer->send({
             topic: new_delivery_request,
             value: new_package.toJsonString()
