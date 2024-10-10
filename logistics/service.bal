@@ -1,11 +1,20 @@
 import ballerina/io;
 import ballerinax/kafka;
 import ballerina/lang.value;
+import ballerinax/mysql.driver as _;
+import ballerinax/mysql;
+import ballerina/sql;
+
+
+final mysql:Client dbClient = check new(
+    host="172.25.0.8", user="root", password="root", port=3306, database="package_delivery_system"
+);
 
 type Package readonly & record {
     string customer_name;
     string contact_number;
     string pickup_location;
+    string delivery_location;
     string delivery_type;
     string preferred_times;
 };
@@ -56,11 +65,29 @@ service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
                     topic = "international-delivery-requests";
                 }
             } 
-            io:println("Sending package request to: '" + topic + "' topic");
+            io:println("[KAFKA] Sending package delivery request to: '" + topic + "' topic...");
             check self.packageProducer->send({
                 topic: topic,
                 value: package.toJsonString()
             });
+            io:println("[MYSQL] Storing package delivery request...");
+            int _ = check addPackage(package);
         }
+    }
+}
+
+isolated function addPackage(Package pkg) returns int|error {
+    string tracking_id = "8";
+    sql:ExecutionResult result = check dbClient->execute(`
+        INSERT INTO deliveries (customer_name, contact_number, pickup_location, delivery_location,
+                               delivery_type, preferred_times, status, tracking_id)
+        VALUES (${pkg.customer_name}, ${pkg.contact_number}, ${pkg.pickup_location},  
+                ${pkg.delivery_location}, ${pkg.delivery_type}, ${pkg.preferred_times}, "Pending", ${tracking_id})
+    `);
+    int|string? lastInsertId = result.lastInsertId;
+    if lastInsertId is int {
+        return lastInsertId;
+    } else {
+        return error("Unable to obtain last insert ID");
     }
 }
