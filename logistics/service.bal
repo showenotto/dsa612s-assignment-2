@@ -1,5 +1,6 @@
 import ballerina/io;
 import ballerinax/kafka;
+import ballerina/lang.value;
 
 type Package readonly & record {
     string customer_name;
@@ -31,24 +32,35 @@ final kafka:ConsumerConfiguration consumerConfigs = {
 };
 
 service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
-    public function main() returns error? {
-        kafka:Producer prod = check new (kafka:DEFAULT_URL);
-        io:println("...");
-        //check prod -> send({topic: "dsp", value: msg});
+    private final kafka:Producer packageProducer;
+    public function init() returns error? {
+        self.packageProducer = check new (kafkaEndpoint);
     }
 
     remote function onConsumerRecord(kafka:AnydataConsumerRecord[] records) returns error? {
         foreach var item in records {
-           json value = item.value.toJson();
-           Package package = check value.cloneWithType(Package);
-           match package.delivery_type{
-             "standard" => {
-             }
-             "express" => {
-             }
-            "international" => {
-            }
-           } 
+            byte[] byteArray = <byte[]> item.value;
+            string jsonString = check string:fromBytes(byteArray);
+            json Json = check value:fromJsonString(jsonString);
+            Package package = check Json.cloneWithType(Package);
+
+            string topic = "";
+            match package.delivery_type{
+                "standard" => {
+                    topic = "standard-delivery-requests";
+                }
+                "express" => {
+                    topic = "express-delivery-requests";
+                }
+                "international" => {
+                    topic = "international-delivery-requests";
+                }
+            } 
+            io:println("Sending package request to: '" + topic + "' topic");
+            check self.packageProducer->send({
+                topic: topic,
+                value: package.toJsonString()
+            });
         }
     }
 }

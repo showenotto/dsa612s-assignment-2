@@ -33,14 +33,13 @@ service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
     private final kafka:Producer packageProducer;
 
     function init() returns error? {
-        io:println("Submitting package deliviery request...");
         self.packageProducer = check new (kafkaEndpoint);
-        Package new_package = {customer_name: "Showen Otto", contact_number: "0814503163", pickup_location: "Soweto Market", delivery_type: "standard", preferred_times: "Morning"};
+        Package new_package = {customer_name: "Showen Otto", contact_number: "0814503163", pickup_location: "Soweto Market", delivery_type: "international", preferred_times: "Morning"};
         check self.packageProducer->send({
             topic: new_delivery_request,
             value: new_package.toJsonString()
         });
-        io:println("Done.");
+        io:println("Submitted package delivery request!");
     }
 
     remote function onConsumerRecord(Delivery[] deliveries) returns error? {
@@ -50,4 +49,3 @@ service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
         };
     }
 } 
-
