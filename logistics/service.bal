@@ -7,7 +7,7 @@ import ballerina/sql;
 
 
 final mysql:Client dbClient = check new(
-    host="172.25.0.6", user="root", password="root", port=3306, database="package_delivery_system"
+    host="172.25.0.5", user="root", password="root", port=3306, database="package_delivery_system"
 );
 
 type Package readonly & record {
@@ -81,7 +81,7 @@ isolated function addPackage(Package pkg) returns int|error {
         INSERT INTO deliveries (customer_name, contact_number, pickup_location, delivery_location,
                                delivery_type, preferred_times, status)
         VALUES (${pkg.customer_name}, ${pkg.contact_number}, ${pkg.pickup_location},  
-                ${pkg.delivery_location}, ${pkg.delivery_type}, ${pkg.preferred_times}, "Pending")
+                ${pkg.delivery_location}, ${pkg.delivery_type}, ${pkg.preferred_times}, "PENDING")
     `);
     int|string? lastInsertId = result.lastInsertId;
     if lastInsertId is int {

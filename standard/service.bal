@@ -3,13 +3,13 @@ import ballerinax/kafka;
 import ballerina/lang.value;
 import ballerinax/mysql.driver as _;
 import ballerinax/mysql;
-//import ballerina/sql;
+import ballerina/sql;
 import ballerina/random;
 //import ballerina/lang.array;
 
 
 final mysql:Client dbClient = check new(
-    host="172.25.0.6", user="root", password="root", port=3306, database="package_delivery_system"
+    host="172.25.0.5", user="root", password="root", port=3306, database="package_delivery_system"
 );
 
 type Package readonly & record {
@@ -48,6 +48,7 @@ service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
     private final string[] evening_times =  ["18h00", "19h00", "20h00"];
     private final string[] days_of_the_week =  ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     private final string[] locations =  ["Katutura", "", "Khomasdal", "Windhoek West"];
+    private Package package;
     public function init() returns error? {
         self.packageProducer = check new (kafkaEndpoint);
     }
@@ -57,29 +58,52 @@ service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
             byte[] byteArray = <byte[]> item.value;
             string jsonString = check string:fromBytes(byteArray);
             json Json = check value:fromJsonString(jsonString);
-            Package package = check Json.cloneWithType(Package);
+            self.package = check Json.cloneWithType(Package);
 
             boolean validation = false;
             self.locations.forEach(function (string location){
-                if (location == package.delivery_location){
+                if (location == self.package.delivery_location){
                     validation = true;
                 }
             });
             
             if (validation){
-                Delivery delivery = {delivery_day: "", delivery_time: "", delivery_type: package.delivery_type};
+                //Process delivery package
+                Delivery delivery = {delivery_day: "", delivery_time: "", delivery_type: self.package.delivery_type};
                 io:println("Creating schedule...");
+                //Calculate delivery time
                 int random;
-                match package.preferred_times{
+                match self.package.preferred_times{
                     "Morning" => {
                         random = check random:createIntInRange(0, 3);
                         delivery.delivery_time = self.morning_times[random];
                     }
+                    "Afternoon" => {
+                        random = check random:createIntInRange(0, 3);
+                        delivery.delivery_time = self.afternoon_times[random];
+                    }
+                    "Evening" => {
+                        random = check random:createIntInRange(0, 3);
+                        delivery.delivery_time = self.evening_times[random];
+                    }
                 }
+                //Calculate delivery day
+                random = check random:createIntInRange(0, 3);
+                delivery.delivery_day = self.days_of_the_week[random];
+                _ = check addDelivery(delivery, self.package);
             }
          }
     }
-
-    isolated function addDelivery(Package pkg) returns error?{
-    }
+}   
+isolated function addDelivery(Delivery del, Package pkg) returns error?{
+        sql:ExecutionResult result = check dbClient->execute(`
+            INSERT INTO delivery_schedules (delivery_type, delivery_time, delivery_day) 
+                VALUES (${del.delivery_type}, ${del.delivery_time}, ${del.delivery_day}); 
+            `);
+        int|error schedule_id = <int>check result.lastInsertId;
+        string contact_number = pkg.contact_number;
+        //Update'tracking_id' and 'status' in deliveries table after order has been fulfilled
+        sql:ExecutionResult exec = check dbClient->execute(`
+            UPDATE deliveries SET status = 'COMPLETED', tracking_id = ${check schedule_id} WHERE contact_number = ${contact_number};
+        `);
 }
