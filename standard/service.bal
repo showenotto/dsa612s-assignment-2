@@ -5,11 +5,9 @@ import ballerinax/mysql.driver as _;
 import ballerinax/mysql;
 import ballerina/sql;
 import ballerina/random;
-//import ballerina/lang.array;
-
 
 final mysql:Client dbClient = check new(
-    host="172.25.0.5", user="root", password="root", port=3306, database="package_delivery_system"
+    host="172.25.0.4", user="root", password="root", port=3306, database="package_delivery_system"
 );
 
 type Package readonly & record {
@@ -47,7 +45,7 @@ service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
     private final string[] afternoon_times =  ["13h00", "14h00", "15h00"];
     private final string[] evening_times =  ["18h00", "19h00", "20h00"];
     private final string[] days_of_the_week =  ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    private final string[] locations =  ["Katutura", "", "Khomasdal", "Windhoek West"];
+    private final string[] locations =  ["Katutura", "Khomasdal", "Windhoek West"];
     private Package package;
     public function init() returns error? {
         self.packageProducer = check new (kafkaEndpoint);
@@ -92,6 +90,11 @@ service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
                 delivery.delivery_day = self.days_of_the_week[random];
                 _ = check addDelivery(delivery, self.package);
                 io:println("Done!");
+                //Delivering response to user
+                check self.packageProducer->send({
+                    topic: delivery_schedule_response,
+                    value: delivery.toJsonString() 
+                });
             }
             else{
                 return error("Delivery location: " + self.package.delivery_location + " not available!");

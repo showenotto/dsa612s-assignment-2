@@ -7,7 +7,7 @@ import ballerina/sql;
 
 
 final mysql:Client dbClient = check new(
-    host="172.25.0.5", user="root", password="root", port=3306, database="package_delivery_system"
+    host="172.25.0.4", user="root", password="root", port=3306, database="package_delivery_system"
 );
 
 type Package readonly & record {

@@ -20,7 +20,6 @@ configurable string groupId = "customers";
 configurable string new_delivery_request = "new-delivery-requests";
 configurable string delivery_schedule_response = "delivery-schedule-response";
 configurable decimal pollingInterval = 2;
-//configurable string kafkaEndpoint = kafka:DEFAULT_URL;
 configurable string kafkaEndpoint = "172.25.0.11:9092";
 
 final kafka:ConsumerConfiguration consumerConfigs = {
@@ -35,7 +34,7 @@ service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
 
     function init() returns error? {
         self.packageProducer = check new (kafkaEndpoint);
-        Package new_package = {customer_name: "Denzel Metukoma", contact_number: "0819503163", pickup_location: "UN Plaza", delivery_location: "Khomasdals", delivery_type: "standard", preferred_times: "Evening"};
+        Package new_package = {customer_name: "Denzel Metukoma", contact_number: "0819503163", pickup_location: "Windhoek", delivery_location: "Angola", delivery_type: "international", preferred_times: "Evening"};
         check self.packageProducer->send({
             topic: new_delivery_request,
             value: new_package.toJsonString()
@@ -44,6 +43,7 @@ service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
     }
 
     remote function onConsumerRecord(Delivery[] deliveries) returns error? {
+        io:println("Delivery Schedule:");
         from Delivery delivery in deliveries
         do {
             io:println(delivery);
