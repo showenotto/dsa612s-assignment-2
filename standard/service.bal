@@ -70,7 +70,7 @@ service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
             if (validation){
                 //Process delivery package
                 Delivery delivery = {delivery_day: "", delivery_time: "", delivery_type: self.package.delivery_type};
-                io:println("Creating schedule...");
+                io:println("Processing 'standard' package delivery request...");
                 //Calculate delivery time
                 int random;
                 match self.package.preferred_times{
@@ -91,10 +91,15 @@ service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
                 random = check random:createIntInRange(0, 3);
                 delivery.delivery_day = self.days_of_the_week[random];
                 _ = check addDelivery(delivery, self.package);
+                io:println("Done!");
+            }
+            else{
+                return error("Delivery location: " + self.package.delivery_location + " not available!");
             }
          }
     }
 }   
+
 isolated function addDelivery(Delivery del, Package pkg) returns error?{
         sql:ExecutionResult result = check dbClient->execute(`
             INSERT INTO delivery_schedules (delivery_type, delivery_time, delivery_day) 
