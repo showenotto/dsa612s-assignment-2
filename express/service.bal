@@ -70,15 +70,15 @@ service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
                 //Calculate delivery time
                 int random;
                 match self.package.preferred_times{
-                    "Morning" => {
+                    "Good Morning" => {
                         random = check random:createIntInRange(0, 3);
                         delivery.delivery_time = self.morning_times[random];
                     }
-                    "Afternoon" => {
+                    "Good Afternoon" => {
                         random = check random:createIntInRange(0, 3);
                         delivery.delivery_time = self.afternoon_times[random];
                     }
-                    "Evening" => {
+                    "Good Evening" => {
                         random = check random:createIntInRange(0, 3);
                         delivery.delivery_time = self.evening_times[random];
                     }
