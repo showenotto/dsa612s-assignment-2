@@ -83,22 +83,7 @@ service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
                         delivery.delivery_time = self.evening_times[random];
                     }
                 }
-                //Calculate delivery day
-                random = check random:createIntInRange(0, 3);
-                delivery.delivery_day = self.days_of_the_week[random];
-                _ = check addDelivery(delivery, self.package);
-                    //Delivering response to user
-                check self.packageProducer->send({
-                    topic: delivery_schedule_response,
-                    value: delivery.toJsonString() 
-                });
-            }
-            else{
-                return error("Delivery location: " + self.package.delivery_location + " not available!");
-            }
-        }
-    }
-}
+    
 
 isolated function addDelivery(Delivery del, Package pkg) returns error?{
     sql:ExecutionResult result = check dbClient->execute(`
