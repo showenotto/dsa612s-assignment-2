@@ -100,3 +100,15 @@ service on new kafka:Listener(kafkaEndpoint, consumerConfigs) {
     }
 }
 
+isolated function addDelivery(Delivery del, Package pkg) returns error?{
+    sql:ExecutionResult result = check dbClient->execute(`
+            INSERT INTO delivery_schedules (delivery_type, delivery_time, delivery_day) 
+                VALUES (${del.delivery_type}, ${del.delivery_time}, ${del.delivery_day}); 
+            `);
+        int|error schedule_id = <int>check result.lastInsertId;
+        string contact_number = pkg.contact_number;
+        //Update'tracking_id' and 'status' in deliveries table after order has been fulfilled
+        sql:ExecutionResult exec = check dbClient->execute(`
+            UPDATE deliveries SET status = 'COMPLETED', tracking_id = ${check schedule_id} WHERE contact_number = ${contact_number};
+        `);
+}
