@@ -119,7 +119,7 @@ modules = [
 ]
 
 [[package]]
-org = "showenn"
+org = "showen"
 name = "client"
 version = "0.1.0"
 dependencies = [
@@ -128,6 +128,6 @@ dependencies = [
 	{org = "ballerinax", name = "kafka"}
 ]
 modules = [
-	{org = "showenn", packageName = "client", moduleName = "client"}
+	{org = "showen", packageName = "client", moduleName = "client"}
 ]
 
